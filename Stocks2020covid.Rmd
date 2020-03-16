@@ -1,0 +1,139 @@
+---
+title: "Stock Watchlist - COVID-19/Oil Price"
+theme: cerulean
+output:
+  html_notebook:
+    code_folding: hide
+    df_print: paged
+    number_sections: yes
+    theme: darkly
+  html_document:
+    df_print: paged
+---
+```{r, include=F, echo=F}
+#loading necessary libraries
+library("knitr")
+library("ggdark")
+library("ggrepel")
+library("quantmod")
+library("tidyverse")
+library("lubridate")
+library("tidyquant")
+library("viridis")
+library("kableExtra")
+```
+
+```{r, include=T, echo=F}
+#list of stocks of interest
+watch.lst <- c("^IXIC", "^GSPC", "^GDAXI", "XBI", #Indices
+                 "ICY.F","MLM.MI","PNG.V","SCYX","ADPT","NSTG",
+                 "IPH.PA","NVTA","A28.F","TWST","XLRN","AUTL",
+                 "MRNA","ARWR","ROSE.SW","ILMN","M0Y.F","ABEO",
+                 "APRE","BGBIO.OL","BNGO", "ARCT", "ETHUSD=X")
+
+#get prices for stocks of interest
+pprices <- tq_get(watch.lst, get = "stock.prices", from = "2020-01-01")
+
+#identify high point:
+pprices.sub <- pprices %>% arrange(date) %>% 
+  subset(date>="2020-02-18"&date<="2020-03-10") %>% 
+  group_by(symbol) %>% mutate(maxprice=max(adjusted,na.rm = T)) %>% 
+  mutate(ratio=adjusted/maxprice)
+```
+
+```{r, include=T, echo=F,fig.height = 6, fig.width = 6, position=center, out.height=5, out.width=5}
+#stock prices by date
+pprices %>%
+  #mutate(label = ifelse(date == max(date,na.rm = T), symbol, NA)) %>% 
+  mutate(label = ifelse(date == "2020-01-06", symbol, NA)) %>% 
+  ggplot(.,aes(x=date,y=adjusted,color=symbol, label=label)) +
+  geom_smooth(method = "loess", se = F, span=0.1) + 
+  annotate("rect",xmin = as.Date("2020-03-04"), xmax = as.Date("2020-03-10"), ymin = 0, ymax = Inf, alpha=.15) +
+  annotate("rect",xmin = as.Date("2020-03-08"), xmax = as.Date("2020-03-09"), ymin = 0, ymax = Inf, alpha=.2) +
+  geom_label(nudge_x = 0, label.padding = unit(0.15, "lines"),label.r = unit(0.05, "lines"),label.size = 0.15) +
+  #geom_label_repel(label.padding = unit(0.15, "lines"),label.r = unit(0.05, "lines"),label.size = 0.15, point.padding = unit(1, "lines"), direction     = "y") +
+  facet_wrap(symbol~., ncol = 3, scales = "free_y") +
+  scale_fill_viridis(discrete = TRUE, option= "viridis") +
+  scale_color_viridis(discrete = TRUE, option= "viridis") +
+  scale_x_date(breaks = "week") +
+  labs(x="",y="",title = "Stock/ Index Values 2020",
+       caption = "Highlighted: Covid Italy, Oil Price War") +
+  dark_theme_light() +
+  theme(
+    plot.margin = unit(c(1,1,1,1), units = "lines"),
+    legend.position = "none",
+    plot.background = element_rect("grey25"),
+    strip.text.y = element_text(size = 6),
+    axis.text.x = element_text(size = 9, angle=30, hjust=1),
+    axis.text.y = element_text(size = 7),
+    strip.background = element_blank(),
+    strip.text.x = element_blank()
+  )
+```
+Index and Stock value development 2020. Highlighted grey area indicates time span when markets reacted on the news of significant SARS-CoV-2 spread in northern Italy. Second highligted grey area indicated when markets reacted on the news of OPEC deal failure with Russia and resulting Saudi driven oil price war. For stock symbol legend see bottom of page. Most stocks in Biotech reached their highpoint just before news about a possible SARS driven recession hit the markets.
+
+```{r, include=T, echo=F,fig.height = 6, fig.width = 6, position=center, out.height=5, out.width=5}
+#plot ratios
+pprices.sub %>% 
+  #mutate(label = ifelse(date == max(date,na.rm = T), symbol, NA)) %>%
+  mutate(label = ifelse(date == "2020-02-20", symbol, NA)) %>% 
+  ungroup(symbol) %>% 
+  mutate(symbol=reorder(symbol,desc(ratio))) %>%
+  ggplot(.,aes(x=date,y=ratio,color=symbol, label=label)) +
+  geom_line(size=1) +
+  geom_label(nudge_x = 0,  label.padding = unit(0.15, "lines"),
+             label.r = unit(0.05, "lines"),
+             label.size = 0.15) +
+  geom_vline(xintercept=as.Date("2020-02-18"),size=0.5,color="black") +
+  facet_wrap(symbol~., ncol = 3) +
+  scale_fill_viridis(discrete = TRUE, option= "viridis") +
+  scale_color_viridis(discrete = TRUE, option= "viridis") +
+  scale_x_date(breaks = "2 days") +  
+  scale_y_continuous(labels = scales::percent) +
+  labs(x="",y="", 
+       title = "Stock values in relation to maximum before SARS-CoV-2 Italy hit") +
+  dark_theme_light() +
+  theme(
+    plot.margin = unit(c(1,1,1,1), units = "lines"),
+    legend.position = "none",
+    plot.background = element_rect("grey25"),
+    strip.text.y = element_text(size = 6),
+    axis.text.x = element_text(size = 9, angle=30, hjust=1),
+    axis.text.y = element_text(size = 7),
+    strip.background = element_blank(),
+    strip.text.x = element_blank()
+    )
+```
+Stock price development in relation to individal highpoint of the indicated time span in the first plot is displayed.
+
+```{r, include=T, echo=F,fig.height = 2, fig.width = 6, position=center, out.height=5, out.width=5}
+#bar plot current value relative to maximum
+pprices.sub %>% mutate(label = ifelse(date == max(date,na.rm = T), symbol, NA)) %>%
+  subset(date == max(date,na.rm = T)) %>% ungroup(symbol) %>% 
+  mutate(symbol=reorder(symbol,desc(ratio))) %>% 
+  ggplot(.,aes(x=symbol,y=ratio,color=symbol, label=label, fill=symbol)) +
+  geom_bar(stat = "identity", width=.5, alpha= 0.8) +
+  scale_fill_viridis(discrete = TRUE, option= "viridis") +
+  scale_color_viridis(discrete = TRUE, option= "viridis") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x="",y="",
+       title = "Current stock value relative to maximum before SARS Italy") +
+  dark_theme_light() +
+  theme(
+    plot.margin = unit(c(1,1,1,1), units = "lines"),
+    legend.position = "none",
+    plot.background = element_rect("grey25"),
+    strip.text.y = element_text(size = 6),
+    axis.text.x = element_text(size = 11, angle=30, hjust=1),
+    axis.text.y = element_text(size = 7)
+  )
+  
+```
+Most recent stock value (`r format(Sys.time(), "%d %B, %Y")`) in relation to possible beginning recession fear time span highpoint. E.g. Abeona lost around 40% of its value until now.
+
+```{r, include=T}
+symb.names <- c("NASDAQ","S&P 500", "DAX Frankfurt", "SPDR S&P Biotech ETF","Incyte Corporation Frankfurt","Molecular Medicine Milan","Kraken Robotics Inc.", "Scynexis Inc.", "Adaptive Biotechnologies Corp.", "NanoStrings Technologies Inc.", "Innate Pharma S.A. Paris", "Invitae Corporation", "Affimed N.V. Frankfurt", "Twist Bioscience Corp", "Acceleron Pharma Inc.", "Autolus Therapeutics plc", "Moderna, Inc.", "Arrowhead Pharmaceuticals, Inc.", "Zur Rose Group AG Swiss", "Illumina, Inc.","Mynaric AG Frankfurt", "Abeona Therapeutics Inc.", "Aprea Therapeutics, Inc.", "BerGenBio ASA Oslo", "Bionano Genomics, Inc.", "Arcturus Therapeutics Holdings Inc.","Ethereum USD")
+
+data.frame(Symbol=watch.lst,Name=symb.names) %>% 
+kable(caption="",align=rep('l',)) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), position="center", full_width = F,font_size = 8) %>% column_spec(1,width = "1in") %>% column_spec(2,width = "2in")
+```
