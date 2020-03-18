@@ -10,7 +10,7 @@ output:
   html_document:
     df_print: paged
 ---
-```{r, include=F, echo=F}
+```{r, include=F, echo=F, warning=F, message=F}
 #loading necessary libraries
 library("knitr")
 library("ggdark")
@@ -23,7 +23,7 @@ library("viridis")
 library("kableExtra")
 ```
 
-```{r, include=T, echo=F}
+```{r, include=T, echo=F, warning=F, message=F}
 #list of stocks of interest
 watch.lst <- c("^IXIC", "^GSPC", "^GDAXI", "XBI", #Indices
                  "ICY.F","MLM.MI","PNG.V","SCYX","ADPT","NSTG",
@@ -41,7 +41,7 @@ pprices.sub <- pprices %>% arrange(date) %>%
   mutate(ratio=adjusted/maxprice)
 ```
 
-```{r, include=T, echo=F,fig.height = 6, fig.width = 6, position=center, out.height=5, out.width=5}
+```{r, include=T, echo=F,fig.height = 6, fig.width = 6, position=center, out.height=5, out.width=5, warning=F, message=F}
 #stock prices by date
 pprices %>%
   #mutate(label = ifelse(date == max(date,na.rm = T), symbol, NA)) %>% 
@@ -72,7 +72,7 @@ pprices %>%
 ```
 Index and Stock price development 2020. Highlighted grey area indicates time span when markets reacted on the news of significant SARS-CoV-2 spread in northern Italy. Second highligted grey area indicated when markets reacted on the news of OPEC deal failure with Russia and resulting Saudi driven oil price war. For stock symbol legend see bottom of page. Most stocks in Biotech reached their highpoint just before news about a possible SARS driven recession hit the markets. Moderna and Arcturus gained positive momentum after initial price drop. Both companies develop RNA based therapeutics including potential SARS-CoV-2 vaccines. Moderna's advantage seems to be a quickly scalable production platform whereas Arcturus's approach might be superior due to smaller amounts of input RNA [rnaitherapeutics.blogspot.com](https://rnaitherapeutics.blogspot.com/2020/03/rnai-therapeutics-and-mrna-vaccines-for.html).
 
-```{r, include=T, echo=F,fig.height = 6, fig.width = 6, position=center, out.height=5, out.width=5}
+```{r, include=T, echo=F,fig.height = 6, fig.width = 6, position=center, out.height=5, out.width=5, warning=F, message=F}
 #plot ratios
 pprices.sub %>% 
   #mutate(label = ifelse(date == max(date,na.rm = T), symbol, NA)) %>%
@@ -106,7 +106,7 @@ pprices.sub %>%
 ```
 Stock price development in relation to individal highpoint of the indicated time span in the first plot is displayed.
 
-```{r, include=T, echo=F,fig.height = 2, fig.width = 6, position=center, out.height=5, out.width=5}
+```{r, include=T, echo=F,fig.height = 2, fig.width = 6, position=center, out.height=5, out.width=5, warning=F, message=F}
 #bar plot current price relative to maximum
 pprices.sub %>% mutate(label = ifelse(date == max(date,na.rm = T), symbol, NA)) %>%
   subset(date == max(date,na.rm = T)) %>% ungroup(symbol) %>% 
@@ -135,5 +135,5 @@ Most recent stock price (`r format(Sys.time(), "%d %B, %Y")`) in relation to pos
 symb.names <- c("NASDAQ","S&P 500", "DAX Frankfurt", "SPDR S&P Biotech ETF","Incyte Corporation Frankfurt","Molecular Medicine Milan","Kraken Robotics Inc.", "Scynexis Inc.", "Adaptive Biotechnologies Corp.", "NanoStrings Technologies Inc.", "Innate Pharma S.A. Paris", "Invitae Corporation", "Affimed N.V. Frankfurt", "Twist Bioscience Corp", "Acceleron Pharma Inc.", "Autolus Therapeutics plc", "Moderna, Inc.", "Arrowhead Pharmaceuticals, Inc.", "Zur Rose Group AG Swiss", "Illumina, Inc.","Mynaric AG Frankfurt", "Abeona Therapeutics Inc.", "Aprea Therapeutics, Inc.", "BerGenBio ASA Oslo", "Bionano Genomics, Inc.", "Arcturus Therapeutics Holdings Inc.","Ethereum USD")
 
 data.frame(Symbol=watch.lst,Name=symb.names) %>% 
-kable(caption="",align=rep('l',)) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), position="center", full_width = F,font_size = 8) %>% column_spec(1,width = "1in") %>% column_spec(2,width = "2in")
+kable(caption="",align=rep('l',)) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), position="center", full_width = F,font_size = 9) %>% column_spec(1,width = "1in") %>% column_spec(2,width = "2in")
 ```
