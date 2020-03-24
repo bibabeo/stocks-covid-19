@@ -33,25 +33,42 @@ watch.lst <- c("^IXIC", "^GSPC", "^GDAXI", "XBI", #Indices
 
 #get prices for stocks of interest
 pprices <- tq_get(watch.lst, get = "stock.prices", from = "2020-01-01")
+```
 
-#identify high point:
-pprices.sub <- pprices %>% arrange(date) %>% 
-  subset(date>="2020-02-18"&date<="2020-03-10") %>% 
-  group_by(symbol) %>% mutate(maxprice=max(adjusted,na.rm = T)) %>% 
+```{r, include=F}
+#adding legend table
+symb.names <- c("NASDAQ","S&P 500", "DAX Frankfurt", "SPDR S&P Biotech ETF","Incyte Corporation Frankfurt","Molecular Medicine Milan","Kraken Robotics Inc.", "Scynexis Inc.", "Adaptive Biotechnologies Corp.", "NanoStrings Technologies Inc.", "Innate Pharma S.A. Paris", "Invitae Corporation", "Affimed N.V. Frankfurt", "Twist Bioscience Corp", "Acceleron Pharma Inc.", "Autolus Therapeutics plc", "Moderna, Inc.", "Arrowhead Pharmaceuticals, Inc.", "Zur Rose Group AG Swiss", "Illumina, Inc.","Mynaric AG Frankfurt", "Abeona Therapeutics Inc.", "Aprea Therapeutics, Inc.", "BerGenBio ASA Oslo", "Bionano Genomics, Inc.", "Arcturus Therapeutics Holdings Inc.","Ethereum USD")
+
+#adding kable table
+label.frm <- data.frame(symbol=watch.lst,name=symb.names) 
+label.frm %>% 
+kable(caption="",align=rep('l',)) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), position="center", full_width = F,font_size = 9) %>% column_spec(1,width = "1in") %>% column_spec(2,width = "2in")
+
+#adding full labels to each symbol
+pprices.n <- merge.data.frame(pprices, label.frm, by=c("symbol"), all.x = TRUE)
+pprices.n$name <- as.character(pprices.n$name)
+
+
+#identify high point and calculate following relation
+pprices.sub <- pprices.n %>% arrange(date) %>% group_by(symbol) %>% 
+  subset(date>="2020-02-18") %>% 
+  mutate(maxprice=
+           ifelse(date>="2020-02-18"&date<="2020-03-10", max(adjusted,na.rm = T),NA)
+         ) %>%
+  fill(maxprice,.direction=c("down")) %>% 
   mutate(ratio=adjusted/maxprice)
 ```
 
 ```{r, include=T, echo=F,fig.height = 6, fig.width = 6, position=center, out.height=5, out.width=5, warning=F, message=F}
-#stock prices by date
-pprices %>%
-  #mutate(label = ifelse(date == max(date,na.rm = T), symbol, NA)) %>% 
-  mutate(label = ifelse(date == "2020-01-06", symbol, NA)) %>% 
-  ggplot(.,aes(x=date,y=adjusted,colour=symbol, label=label)) +
+
+#stock prices by date beginning of 2020
+pprices.n %>%
+  mutate(name = ifelse(date == as.Date("2020-01-02"), name, NA)) %>% 
+  ggplot(.,aes(x=date,y=adjusted,colour=symbol, label=name)) +
   geom_smooth(method = "loess", se = F, span=0.1) + 
   annotate("rect",xmin = as.Date("2020-03-04"), xmax = as.Date("2020-03-10"), ymin = 0, ymax = Inf, alpha=.15) +
   annotate("rect",xmin = as.Date("2020-03-08"), xmax = as.Date("2020-03-09"), ymin = 0, ymax = Inf, alpha=.2) +
-  geom_label(nudge_x = 0, label.padding = unit(0.15, "lines"),label.r = unit(0.05, "lines"),label.size = 0.15) +
-  #geom_label_repel(label.padding = unit(0.15, "lines"),label.r = unit(0.05, "lines"),label.size = 0.15, point.padding = unit(1, "lines"), direction     = "y") +
+  geom_label(nudge_x = 0,nudge_y = -0.5*pprices.n$adjusted,hjust = 0, label.padding = unit(0.15, "lines"),label.r = unit(0.15, "lines"),label.size = 0.15, size=2.5) +
   facet_wrap(symbol~., ncol = 3, scales = "free_y") +
   scale_fill_viridis(discrete = TRUE, option= "viridis") +
   scale_color_viridis(discrete = TRUE, option= "viridis") +
@@ -69,22 +86,19 @@ pprices %>%
     strip.background = element_blank(),
     strip.text.x = element_blank()
   )
+
 ```
 Index and Stock price development 2020. Highlighted grey area indicates time span when markets reacted on the news of significant SARS-CoV-2 spread in northern Italy. Second highligted grey area indicated when markets reacted on the news of OPEC deal failure with Russia and resulting Saudi driven oil price war. For stock symbol legend see bottom of page. Most stocks in Biotech reached their highpoint just before news about a possible SARS driven recession hit the markets. Moderna and Arcturus gained positive momentum after initial price drop. Both companies develop RNA based therapeutics including potential SARS-CoV-2 vaccines. Moderna's advantage seems to be a quickly scalable production platform whereas Arcturus's approach might be superior due to smaller amounts of input RNA [rnaitherapeutics.blogspot.com](https://rnaitherapeutics.blogspot.com/2020/03/rnai-therapeutics-and-mrna-vaccines-for.html).
 
 ```{r, include=T, echo=F,fig.height = 6, fig.width = 6, position=center, out.height=5, out.width=5, warning=F, message=F}
 #plot ratios
 pprices.sub %>% 
-  #mutate(label = ifelse(date == max(date,na.rm = T), symbol, NA)) %>%
-  mutate(label = ifelse(date == "2020-02-20", symbol, NA)) %>% 
+  mutate(name = ifelse(date == "2020-02-18", name, NA)) %>% 
   ungroup(symbol) %>% 
   mutate(symbol=reorder(symbol,desc(ratio))) %>%
-  ggplot(.,aes(x=date,y=ratio,color=symbol, label=label)) +
+  ggplot(.,aes(x=date,y=ratio,color=symbol, label=name)) +
   geom_line(size=1) +
-  geom_label(nudge_x = 0,  label.padding = unit(0.15, "lines"),
-             label.r = unit(0.05, "lines"),
-             label.size = 0.15) +
-  geom_vline(xintercept=as.Date("2020-02-18"),size=0.5,color="black") +
+  geom_label(nudge_x = 0,nudge_y = -0.3*pprices.sub$ratio, hjust = 0, label.padding = unit(0.15, "lines"),label.r = unit(0.15, "lines"),label.size = 0.15, size=2.5) +
   facet_wrap(symbol~., ncol = 3) +
   scale_fill_viridis(discrete = TRUE, option= "viridis") +
   scale_color_viridis(discrete = TRUE, option= "viridis") +
@@ -108,10 +122,12 @@ Stock price development in relation to individal highpoint of the indicated time
 
 ```{r, include=T, echo=F,fig.height = 2, fig.width = 6, position=center, out.height=5, out.width=5, warning=F, message=F}
 #bar plot current price relative to maximum
-pprices.sub %>% mutate(label = ifelse(date == max(date,na.rm = T), symbol, NA)) %>%
-  subset(date == max(date,na.rm = T)) %>% ungroup(symbol) %>% 
+pprices.sub %>% 
+  group_by(symbol) %>%
+  filter(.,date == max(date,na.rm = T)) %>% 
+  ungroup(symbol) %>%
   mutate(symbol=reorder(symbol,desc(ratio))) %>% 
-  ggplot(.,aes(x=symbol,y=ratio,color=symbol, label=label, fill=symbol)) +
+  ggplot(.,aes(x=symbol,y=ratio,color=symbol, fill=symbol)) +
   geom_bar(stat = "identity", width=.5, alpha= 0.8) +
   scale_fill_viridis(discrete = TRUE, option= "viridis") +
   scale_color_viridis(discrete = TRUE, option= "viridis") +
@@ -124,16 +140,14 @@ pprices.sub %>% mutate(label = ifelse(date == max(date,na.rm = T), symbol, NA)) 
     legend.position = "none",
     plot.background = element_rect("grey25"),
     strip.text.y = element_text(size = 6),
-    axis.text.x = element_text(size = 11, angle=30, hjust=1),
+    axis.text.x = element_text(size = 10, angle=30, hjust=1),
     axis.text.y = element_text(size = 7)
   )
   
 ```
-Most recent stock price (`r format(Sys.time(), "%d %B, %Y")`) in relation to possible beginning recession fear time span highpoint. E.g. Abeona lost around 40% of its price until now.
-
+Most recent stock price (`r format(Sys.time(), "%d %B, %Y")`) in relation to possible beginning recession fear time span highpoint. E.g. Bionano lost around 60% of its price until now.
 ```{r, include=T}
-symb.names <- c("NASDAQ","S&P 500", "DAX Frankfurt", "SPDR S&P Biotech ETF","Incyte Corporation Frankfurt","Molecular Medicine Milan","Kraken Robotics Inc.", "Scynexis Inc.", "Adaptive Biotechnologies Corp.", "NanoStrings Technologies Inc.", "Innate Pharma S.A. Paris", "Invitae Corporation", "Affimed N.V. Frankfurt", "Twist Bioscience Corp", "Acceleron Pharma Inc.", "Autolus Therapeutics plc", "Moderna, Inc.", "Arrowhead Pharmaceuticals, Inc.", "Zur Rose Group AG Swiss", "Illumina, Inc.","Mynaric AG Frankfurt", "Abeona Therapeutics Inc.", "Aprea Therapeutics, Inc.", "BerGenBio ASA Oslo", "Bionano Genomics, Inc.", "Arcturus Therapeutics Holdings Inc.","Ethereum USD")
-
-data.frame(Symbol=watch.lst,Name=symb.names) %>% 
+label.frm %>% 
 kable(caption="",align=rep('l',)) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), position="center", full_width = F,font_size = 9) %>% column_spec(1,width = "1in") %>% column_spec(2,width = "2in")
 ```
+
