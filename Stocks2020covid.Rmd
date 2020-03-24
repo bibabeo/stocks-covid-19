@@ -63,7 +63,7 @@ pprices.sub <- pprices.n %>% arrange(date) %>% group_by(symbol) %>%
 
 #stock prices by date beginning of 2020
 pprices.n %>%
-  mutate(name = ifelse(date == as.Date("2020-01-02"), name, NA)) %>% 
+  mutate(name = ifelse(date == as.Date("2020-01-03"), name, NA)) %>% 
   ggplot(.,aes(x=date,y=adjusted,colour=symbol, label=name)) +
   geom_smooth(method = "loess", se = F, span=0.1) + 
   annotate("rect",xmin = as.Date("2020-03-04"), xmax = as.Date("2020-03-10"), ymin = 0, ymax = Inf, alpha=.15) +
