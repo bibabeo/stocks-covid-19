@@ -145,7 +145,7 @@ pprices.sub %>%
   )
   
 ```
-Most recent stock price (`r format(Sys.time(), "%d %B, %Y")`) in relation to possible beginning recession fear time span highpoint. E.g. Bionano lost around 60% of its price until now.
+Most recent stock price (`r format(Sys.time(), "%d %B, %Y")`) in relation to possible beginning recession fear time span highpoint. E.g. Bionano lost around 75% of its price until now.
 ```{r, include=T}
 label.frm %>% 
 kable(caption="",align=rep('l',)) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), position="center", full_width = F,font_size = 9) %>% column_spec(1,width = "1in") %>% column_spec(2,width = "2in")
